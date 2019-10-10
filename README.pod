@@ -1,0 +1,29 @@
+=pod
+
+=head1 NAME
+
+Bio::Minimizer - minimizer package
+
+=head1 SYNOPSIS
+
+    my $minimizer = Bio::Minimizer->new($sequenceString);
+    my $kmers     = $minimizer->kmers;     # hash of minimizer => kmer
+    my $minimizers= $minimizer->minimizers;# hash of minimizer => [kmer1,kmer2,...]
+
+=head1 DESCRIPTION
+
+Creates a set of minimizers from sequence
+
+=head1 VARIABLES
+
+=over
+
+=item $Bio::Minimizer::iThreads
+
+Boolean describing whether the module instance is using threads
+
+=back
+
+
+=cut
+
