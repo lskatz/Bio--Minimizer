@@ -43,11 +43,17 @@ sub logmsg{
 
 Bio::Minimizer - minimizer package
 
+Based on the ideas put forth by Roberts et al 2004:
+https://academic.oup.com/bioinformatics/article/20/18/3363/202143
+
 =head1 SYNOPSIS
 
     my $minimizer = Bio::Minimizer->new($sequenceString);
     my $kmers     = $minimizer->kmers;     # hash of minimizer => kmer
     my $minimizers= $minimizer->minimizers;# hash of minimizer => [kmer1,kmer2,...]
+
+    # With more options
+    my $lmer      = Bio::Minimizer->new($sequenceString,{k=>31,l=>21});
 
 =head1 DESCRIPTION
 
@@ -63,15 +69,37 @@ Boolean describing whether the module instance is using threads
 
 =back
 
+=head1 METHODS
+
+=over
+
+=item Bio::Minimizer->new()
+
+    Arguments:
+      sequence     A string of ACGT
+      settings     A hash
+        k          Kmer length
+        l          Minimizer length (some might call it lmer)
+
+=back
+
 =cut
 
 sub new{
-  my($class,$sequence) = @_;
+  my($class,$sequence,$settings) = @_;
+
+  # Extract from $settings or set defaults
+  my $k = $$settings{k} || 31;
+  my $l = $$settings{l} || 21;
+
+  # Alter the sequence a bit
+  $sequence = uc($sequence); # work in uppercase only
+  $sequence =~ s/\s+//g;     # Remove all whitespace
 
   my $self={
     sequence   => $sequence,
-    k          => 31,        # kmer length
-    l          => 21,        # minimizer length
+    k          => $k,        # kmer length
+    l          => $l,        # minimizer length
     
     # Filled in by _minimizers()
     minimizers => {},        # kmer      => minimizer
@@ -93,19 +121,30 @@ sub _minimizers{
   my %KMER;
 
   my ($k,$l)=($$self{k}, $$self{l}); 
+  my $defaultSmallestMinimizer = 'Z' x $l;
+
+  # How many minimizers we'll get per ker: the difference in lengths, plus 1
   my $minimizersPerKmer = $k-$l+1;
-  $seq=~s/\s+//g;
-  my $length=length($seq);
-  my $numKmers = $length - $k + 1;
+
+  # Number of kmers in the seq is the length of the seq, minus $k, plus 1
+  my $numKmers = length($seq) - $k + 1;
   for(my $i=0; $i<$numKmers; $i++){
+    # Extract the kmer before getting all the minimizers
     my $kmer=substr($seq,$i,$k);
-    my $smallestMinimizer = ~0;
+    # Start the 'smallest minimizer' as a very 'large' minimizer
+    # so that all real minimizers are smaller than it.
+    my $smallestMinimizer = $defaultSmallestMinimizer;
     for(my $j=0; $j<$minimizersPerKmer; $j++){
+      # Test each substr of the kmer (minimizer) to find
+      # the alphabetically lowest one.
       my $minimizer = substr($kmer, $j, $l);
       if($minimizer lt $smallestMinimizer){
         $smallestMinimizer = $minimizer;
       } 
+
+      # Record the real minimizer for this kmer
       $LMER{$kmer} = $minimizer;
+      # Record the kmers for which this minimizer indexes
       push(@{ $KMER{$minimizer} }, $kmer);
     } 
   } 
@@ -113,6 +152,7 @@ sub _minimizers{
   $$self{minimizers} = \%LMER;
   $$self{kmers}      = \%KMER;
 
+  # Go ahead and return kmer=>minimizer
   return \%LMER;
 }
  
