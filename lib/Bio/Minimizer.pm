@@ -11,6 +11,9 @@ use strict;
 use warnings;
 use Carp qw/carp croak/;
 
+# TODO if/when threads, multithread based on large substrings
+# of DNA b/c future heuristic 'saving lmers' between adjacent
+# kmers.
 our $iThreads; # boolean for whether threads are loaded
 BEGIN{
   eval{
