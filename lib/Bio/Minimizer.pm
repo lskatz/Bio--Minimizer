@@ -4,11 +4,12 @@
 # Author: Lee Katz <lkatz@cdc.gov>
 
 package Bio::Minimizer;
-require 5.10.0;
-our $VERSION=0.1;
+require 5.12.0;
+our $VERSION=0.2;
 
 use strict;
 use warnings;
+use Carp qw/carp croak/;
 
 our $iThreads; # boolean for whether threads are loaded
 BEGIN{
@@ -117,13 +118,18 @@ sub new{
 # Argument: string of nucleotides
 sub _minimizers{
   my($self,$seq) = @_;
-  my %LMER; 
+  my %MINIMIZER; 
   my %KMER;
 
   my ($k,$l)=($$self{k}, $$self{l}); 
-  my $defaultSmallestMinimizer = 'Z' x $l;
+  my $defaultSmallestLmer = 'Z' x $l;
 
-  # How many minimizers we'll get per ker: the difference in lengths, plus 1
+  # Create a small array of lmers along the way
+  # so that they don't have to be recalculated
+  # all the time between kmers.
+  my @lmer;
+
+  # How many minimizers we'll get per kmer: the difference in lengths, plus 1
   my $minimizersPerKmer = $k-$l+1;
 
   # Number of kmers in the seq is the length of the seq, minus $k, plus 1
@@ -133,26 +139,27 @@ sub _minimizers{
     my $kmer=substr($seq,$i,$k);
     # Start the 'smallest minimizer' as a very 'large' minimizer
     # so that all real minimizers are smaller than it.
-    my $smallestMinimizer = $defaultSmallestMinimizer;
+    my $smallestLmer = $defaultSmallestLmer;
     for(my $j=0; $j<$minimizersPerKmer; $j++){
       # Test each substr of the kmer (minimizer) to find
       # the alphabetically lowest one.
-      my $minimizer = substr($kmer, $j, $l);
-      if($minimizer lt $smallestMinimizer){
-        $smallestMinimizer = $minimizer;
+      my $lmer = substr($kmer, $j, $l);
+      if($lmer lt $smallestLmer){
+        $smallestLmer = $lmer;
       } 
 
       # Record the real minimizer for this kmer
-      $LMER{$kmer} = $minimizer;
+      $MINIMIZER{$kmer} = $lmer;
       # Record the kmers for which this minimizer indexes
-      push(@{ $KMER{$minimizer} }, $kmer);
+      push(@{ $KMER{$lmer} }, $kmer);
     } 
   } 
 
-  $$self{minimizers} = \%LMER;
+  $$self{minimizers} = \%MINIMIZER;
   $$self{kmers}      = \%KMER;
 
   # Go ahead and return kmer=>minimizer
-  return \%LMER;
+  return \%MINIMIZER;
 }
  
+1;
