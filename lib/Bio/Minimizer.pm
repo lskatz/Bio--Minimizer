@@ -9,6 +9,7 @@ our $VERSION=0.4;
 
 use strict;
 use warnings;
+use Data::Dumper;
 use Carp qw/carp croak/;
 
 # TODO if/when threads, multithread based on large substrings
@@ -142,24 +143,28 @@ sub _minimizers{
     # Number of kmers in the seq is the length of the seq, minus $k, plus 1
     my $numKmers = length($sequence) - $k + 1;
     for(my $i=0; $i<$numKmers; $i++){
-      # Extract the kmer before getting all the minimizers
-      my $kmer=substr($sequence,$i,$k);
-      # Start the 'smallest minimizer' as a very 'large' minimizer
-      # so that all real minimizers are smaller than it.
-      my $smallestLmer = $defaultSmallestLmer;
-      for(my $j=0; $j<$minimizersPerKmer; $j++){
-        # Test each substr of the kmer (minimizer) to find
-        # the alphabetically lowest one.
-        my $lmer = substr($kmer, $j, $l);
-        if($lmer lt $smallestLmer){
-          $smallestLmer = $lmer;
-        } 
 
-        # Record the real minimizer for this kmer
-        $MINIMIZER{$kmer} = $smallestLmer;
-        # Record the kmers for which this minimizer indexes
-        push(@{ $KMER{$lmer} }, $kmer);
-      } 
+      # The kmer is the subsequence starting at $i, length $k
+      my $kmer=substr($sequence,$i,$k);
+      
+      # Get lmers along the length of the sequence into the @lmer buffer.
+      # The start counter $j how many lmers are already in the buffer.
+      for(my $j=scalar(@lmer); $j < $minimizersPerKmer; $j++){
+        # The lmer will start at $i plus how many lmers are already
+        # in the buffer @lmer, for length $l.
+        my $lmer = substr($sequence, $i+$j, $l);
+        push(@lmer, $lmer);
+      }
+
+      # The minimizer is the lowest lmer lexicographically sorted.
+      my $minimizer = (sort {$a cmp $b} @lmer)[0];
+
+      # Remove one lmer to reflect the step size of one
+      # for the next iteration of the loop.
+      shift(@lmer);
+
+      $MINIMIZER{$kmer} = $minimizer;
+      push(@{ $KMER{$minimizer} }, $kmer);
     } 
   }
 
