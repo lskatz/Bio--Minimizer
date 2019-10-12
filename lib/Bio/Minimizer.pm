@@ -5,7 +5,7 @@
 
 package Bio::Minimizer;
 require 5.12.0;
-our $VERSION=0.3;
+our $VERSION=0.4;
 
 use strict;
 use warnings;
@@ -25,10 +25,6 @@ BEGIN{
     $iThreads = 0;
   }
 }
-
-# TODO if 'die' is imported by a script, redefine
-# sig die in that script as this function.
-local $SIG{'__DIE__'} = sub { my $e = $_[0]; $e =~ s/(at [^\s]+? line \d+\.$)/\nStopped $1/; die("$0: ".(caller(1))[3].": ".$e); };
 
 my $startTime = time();
 sub logmsg{
