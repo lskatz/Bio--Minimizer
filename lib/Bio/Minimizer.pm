@@ -138,28 +138,34 @@ sub _minimizers{
   # How many minimizers we'll get per kmer: the difference in lengths, plus 1
   my $minimizersPerKmer = $k-$l+1;
 
-  # Number of kmers in the seq is the length of the seq, minus $k, plus 1
-  my $numKmers = length($seq) - $k + 1;
-  for(my $i=0; $i<$numKmers; $i++){
-    # Extract the kmer before getting all the minimizers
-    my $kmer=substr($seq,$i,$k);
-    # Start the 'smallest minimizer' as a very 'large' minimizer
-    # so that all real minimizers are smaller than it.
-    my $smallestLmer = $defaultSmallestLmer;
-    for(my $j=0; $j<$minimizersPerKmer; $j++){
-      # Test each substr of the kmer (minimizer) to find
-      # the alphabetically lowest one.
-      my $lmer = substr($kmer, $j, $l);
-      if($lmer lt $smallestLmer){
-        $smallestLmer = $lmer;
-      } 
+  # Also reverse-complement the sequence
+  my $revcom = reverse($seq);
+  $revcom =~ tr/ATCGatcg/TAGCtagc/;
 
-      # Record the real minimizer for this kmer
-      $MINIMIZER{$kmer} = $smallestLmer;
-      # Record the kmers for which this minimizer indexes
-      push(@{ $KMER{$lmer} }, $kmer);
+  for my $sequence($seq, $revcom){
+    # Number of kmers in the seq is the length of the seq, minus $k, plus 1
+    my $numKmers = length($sequence) - $k + 1;
+    for(my $i=0; $i<$numKmers; $i++){
+      # Extract the kmer before getting all the minimizers
+      my $kmer=substr($sequence,$i,$k);
+      # Start the 'smallest minimizer' as a very 'large' minimizer
+      # so that all real minimizers are smaller than it.
+      my $smallestLmer = $defaultSmallestLmer;
+      for(my $j=0; $j<$minimizersPerKmer; $j++){
+        # Test each substr of the kmer (minimizer) to find
+        # the alphabetically lowest one.
+        my $lmer = substr($kmer, $j, $l);
+        if($lmer lt $smallestLmer){
+          $smallestLmer = $lmer;
+        } 
+
+        # Record the real minimizer for this kmer
+        $MINIMIZER{$kmer} = $smallestLmer;
+        # Record the kmers for which this minimizer indexes
+        push(@{ $KMER{$lmer} }, $kmer);
+      } 
     } 
-  } 
+  }
 
   $$self{minimizers} = \%MINIMIZER;
   $$self{kmers}      = \%KMER;

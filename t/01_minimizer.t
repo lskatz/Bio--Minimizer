@@ -23,21 +23,34 @@ is($$minimizer{k}, 31, "Expected default kmer length");
 is($$minimizer{l}, 21, "Expected default lmer length");
 
 subtest 'Kmer => minimizer' => sub{
-  plan tests=>3;
-  is($$minimizer{minimizers}{TCAGTCACAAGAGGCGCTCAGACCGACCTGC}, "AAGAGGCGCTCAGACCGACCT");
-  is($$minimizer{minimizers}{TTGCTTCACCGCTACGCAGGCCTCTATTCCA}, "ACCGCTACGCAGGCCTCTATT");
-  is($$minimizer{minimizers}{GTCCAGCGTCTTTGAGGGTAATCATTCGAGG}, "AGCGTCTTTGAGGGTAATCAT");
+  plan tests=>6;
+  is($$minimizer{minimizers}{TCAGTCACAAGAGGCGCTCAGACCGACCTGC}, "AAGAGGCGCTCAGACCGACCT", "forward kmer");
+  is($$minimizer{minimizers}{TTGCTTCACCGCTACGCAGGCCTCTATTCCA}, "ACCGCTACGCAGGCCTCTATT", "forward kmer");
+  is($$minimizer{minimizers}{GTCCAGCGTCTTTGAGGGTAATCATTCGAGG}, "AGCGTCTTTGAGGGTAATCAT", "forward kmer");
+
+  # revcom minimizers
+  is($$minimizer{minimizers}{TGGGTCTGTCCCTCACGTACCGACTAAAGTA}, "CCCTCACGTACCGACTAAAGT", "revcom kmer");
+  is($$minimizer{minimizers}{CCGACTAAAGTATTAAAAGTGATTCTGGGGC}, "AAAGTATTAAAAGTGATTCTG", "revcom kmer");
+  is($$minimizer{minimizers}{CCGACTAAAGTATTAAAAGTGATTCTGGGGC}, "AAAGTATTAAAAGTGATTCTG", "revcom kmer");
 };
 
 subtest 'Minimizer => kmer' => sub{
-  plan tests=>6;
+  plan tests=>12;
 
   # Six different minimizers at different array elements, leading to different kmers
-  is($$minimizer{kmers}{TTATGAAGGGTTGCTTCACCG}[0], "GGGCTGATTGTTATGAAGGGTTGCTTCACCG");
-  is($$minimizer{kmers}{AAGAGGCGCTCAGACCGACCT}[1], "TTCAGTCACAAGAGGCGCTCAGACCGACCTG");
-  is($$minimizer{kmers}{AGGAACCGGACCTTTAATCAC}[2], "ATCATTCGAGGAACCGGACCTTTAATCACGG");
-  is($$minimizer{kmers}{ACCGCTACGCAGGCCTCTATT}[3], "TTGCTTCACCGCTACGCAGGCCTCTATTCCA");
-  is($$minimizer{kmers}{CCAGAATCACTTTTAATACTT}[5], "GGGCCCCAGAATCACTTTTAATACTTTAGTC");
-  is($$minimizer{kmers}{AGCGTCTTTGAGGGTAATCAT}[6], "GTCCAGCGTCTTTGAGGGTAATCATTCGAGG");
+  is($$minimizer{kmers}{TTATGAAGGGTTGCTTCACCG}[0], "GGGCTGATTGTTATGAAGGGTTGCTTCACCG", "forward kmer");
+  is($$minimizer{kmers}{AAGAGGCGCTCAGACCGACCT}[1], "TTCAGTCACAAGAGGCGCTCAGACCGACCTG", "forward kmer");
+  is($$minimizer{kmers}{AGGAACCGGACCTTTAATCAC}[2], "ATCATTCGAGGAACCGGACCTTTAATCACGG", "forward kmer");
+  is($$minimizer{kmers}{ACCGCTACGCAGGCCTCTATT}[3], "TTGCTTCACCGCTACGCAGGCCTCTATTCCA", "forward kmer");
+  is($$minimizer{kmers}{CCAGAATCACTTTTAATACTT}[5], "GGGCCCCAGAATCACTTTTAATACTTTAGTC", "forward kmer");
+  is($$minimizer{kmers}{AGCGTCTTTGAGGGTAATCAT}[6], "GTCCAGCGTCTTTGAGGGTAATCATTCGAGG", "forward kmer");
+
+  # revcom minimizers
+  is($$minimizer{kmers}{CGGTTCCTCGAATGATTACCC}[0], "ATTAAAGGTCCGGTTCCTCGAATGATTACCC", "revcom kmer");
+  is($$minimizer{kmers}{CGGTTCCTCGAATGATTACCC}[1], "TTAAAGGTCCGGTTCCTCGAATGATTACCCT", "revcom kmer");
+  is($$minimizer{kmers}{ATAGAGGCCTGCGTAGCGGTG}[2], "GGTCTGGAATAGAGGCCTGCGTAGCGGTGAA", "revcom kmer");
+  is($$minimizer{kmers}{ATAGAGGCCTGCGTAGCGGTG}[3], "GTCTGGAATAGAGGCCTGCGTAGCGGTGAAG", "revcom kmer");
+  is($$minimizer{kmers}{CCCTCACGTACCGACTAAAGT}[4], "GTCTGTCCCTCACGTACCGACTAAAGTATTA", "revcom kmer");
+  is($$minimizer{kmers}{CCCTCACGTACCGACTAAAGT}[5], "TCTGTCCCTCACGTACCGACTAAAGTATTAA", "revcom kmer");
 };
 
