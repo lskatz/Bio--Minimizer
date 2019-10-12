@@ -5,7 +5,7 @@
 
 package Bio::Minimizer;
 require 5.12.0;
-our $VERSION=0.2;
+our $VERSION=0.3;
 
 use strict;
 use warnings;
@@ -84,6 +84,7 @@ Boolean describing whether the module instance is using threads
       settings     A hash
         k          Kmer length
         l          Minimizer length (some might call it lmer)
+        numcpus    Number of threads to use. Does not currently do anything.
 
 =back
 
@@ -95,6 +96,7 @@ sub new{
   # Extract from $settings or set defaults
   my $k = $$settings{k} || 31;
   my $l = $$settings{l} || 21;
+  my $numcpus = $$settings{numcpus} || 1;
 
   # Alter the sequence a bit
   $sequence = uc($sequence); # work in uppercase only
@@ -104,6 +106,7 @@ sub new{
     sequence   => $sequence,
     k          => $k,        # kmer length
     l          => $l,        # minimizer length
+    numcpus    => $numcpus,  
     
     # Filled in by _minimizers()
     minimizers => {},        # kmer      => minimizer
@@ -152,7 +155,7 @@ sub _minimizers{
       } 
 
       # Record the real minimizer for this kmer
-      $MINIMIZER{$kmer} = $lmer;
+      $MINIMIZER{$kmer} = $smallestLmer;
       # Record the kmers for which this minimizer indexes
       push(@{ $KMER{$lmer} }, $kmer);
     } 

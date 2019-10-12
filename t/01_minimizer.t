@@ -24,16 +24,20 @@ is($$minimizer{l}, 21, "Expected default lmer length");
 
 subtest 'Kmer => minimizer' => sub{
   plan tests=>3;
-  is($$minimizer{minimizers}{TCAGTCACAAGAGGCGCTCAGACCGACCTGC}, "GAGGCGCTCAGACCGACCTGC");
-  is($$minimizer{minimizers}{TTGCTTCACCGCTACGCAGGCCTCTATTCCA}, "GCTACGCAGGCCTCTATTCCA");
-  is($$minimizer{minimizers}{GTCCAGCGTCTTTGAGGGTAATCATTCGAGG}, "TTTGAGGGTAATCATTCGAGG");
+  is($$minimizer{minimizers}{TCAGTCACAAGAGGCGCTCAGACCGACCTGC}, "AAGAGGCGCTCAGACCGACCT");
+  is($$minimizer{minimizers}{TTGCTTCACCGCTACGCAGGCCTCTATTCCA}, "ACCGCTACGCAGGCCTCTATT");
+  is($$minimizer{minimizers}{GTCCAGCGTCTTTGAGGGTAATCATTCGAGG}, "AGCGTCTTTGAGGGTAATCAT");
 };
 
 subtest 'Minimizer => kmer' => sub{
-  plan tests=>3;
+  plan tests=>6;
 
+  # Six different minimizers at different array elements, leading to different kmers
   is($$minimizer{kmers}{TTATGAAGGGTTGCTTCACCG}[0], "GGGCTGATTGTTATGAAGGGTTGCTTCACCG");
+  is($$minimizer{kmers}{AAGAGGCGCTCAGACCGACCT}[1], "TTCAGTCACAAGAGGCGCTCAGACCGACCTG");
   is($$minimizer{kmers}{AGGAACCGGACCTTTAATCAC}[2], "ATCATTCGAGGAACCGGACCTTTAATCACGG");
+  is($$minimizer{kmers}{ACCGCTACGCAGGCCTCTATT}[3], "TTGCTTCACCGCTACGCAGGCCTCTATTCCA");
   is($$minimizer{kmers}{CCAGAATCACTTTTAATACTT}[5], "GGGCCCCAGAATCACTTTTAATACTTTAGTC");
+  is($$minimizer{kmers}{AGCGTCTTTGAGGGTAATCAT}[6], "GTCCAGCGTCTTTGAGGGTAATCATTCGAGG");
 };
 
