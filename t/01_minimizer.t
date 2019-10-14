@@ -36,5 +36,7 @@ subtest 'Kmer => minimizer' => sub{
   is($$minimizer{minimizers}{CCGACTAAAGTATTAAAAGTGATTCTGGGGC}, "AAAGTATTAAAAGTGATTCTG", "CCGACTAAAGTATTAAAAGTGATTCTGGGGC");
 };
 
-is(scalar(keys(%{ $$minimizer{minimizers} })), 360, "Number of minimizers");
+# Number of minimizers in a 240 nt sequence with k=31:
+# 240 - 31 + 1 = 210.  Times 2 for revcom, 420.
+is(scalar(keys(%{ $$minimizer{minimizers} })), 420, "Number of minimizers");
 
