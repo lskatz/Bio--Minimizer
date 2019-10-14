@@ -171,9 +171,11 @@ sub _minimizers{
   # Ensure some overlap in the subseq lengths by adding in $k.
   for my $sequence($seq, $revcom){
     my $sequenceLength = length($sequence);
-    my $subseqLength = int($sequenceLength / $$self{numcpus}) + 1 + $k;
+    my $subseqLength = int($sequenceLength / $$self{numcpus});
     for(my $i=0; $i < $sequenceLength; $i += $subseqLength){
-      my $subseq = substr($sequence, $i, $subseqLength);
+      my $start = $i - $k;
+      if($start < 0){ $start = 0; }
+      my $subseq = substr($sequence, $start, $subseqLength + 2*$k);
       if(length($subseq) < ($k+1)){
         $subseq = substr($sequence, -$k - 1);
       }
