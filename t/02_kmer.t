@@ -10,13 +10,7 @@ use List::MoreUtils qw/uniq/;
 
 use_ok 'Bio::Minimizer';
 
-srand(42);
-my @nt = qw(A T C G);
-my $alphabetSize = scalar(@nt);
-my $sequence = "";
-for(1..240){
-  $sequence .= $nt[int(rand($alphabetSize))]
-}
+my $sequence = "CTATAGTTCGTCCAGCGTCTTTGAGGGTAATCATTCGAGGAACCGGACCTTTAATCACGGCTTACTTCAGTCACAAGAGGCGCTCAGACCGACCTGCATCTGGTCAGGGCCCCAGAATCACTTTTAATACTTTAGTCGGTACGTGAGGGACAGACCCAAAGGTACCGGGGCTGATTGTTATGAAGGGTTGCTTCACCGCTACGCAGGCCTCTATTCCAGACCGCTAGGCTTCTAACCTGC";
 
 my $minimizer = Bio::Minimizer->new($sequence);
 

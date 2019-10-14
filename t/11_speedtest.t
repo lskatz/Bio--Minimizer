@@ -11,16 +11,12 @@ use Benchmark ':all';
 
 use Bio::Minimizer;
 
-srand(42);
-my @nt = qw(A T C G);
-my $alphabetSize = scalar(@nt);
-my $sequence = "";
-for(1..1000){
-  $sequence .= $nt[int(rand($alphabetSize))]
-}
+my $sequence="CTATAGTTCGTCCAGCGTCTTTGAGGGTAATCATTCGAGGAACCGGACCTTTAATCACGGCTTACTTCAGTCACAAGAGGCGCTCAGACCGACCTGCATCTGGTCAGGGCCCCAGAATCACTTTTAATACTTTAGTCGGTACGTGAGGGACAGACCCAAAGGTACCGGGGCTGATTGTTATGAAGGGTTGCTTCACCGCTACGCAGGCCTCTATTCCAGACCGCTAGGCTTCTAACCTGC";
 
 sub speedPerThread{
   my($thread) = @_;
+  my $stderr="";
+  open(local *STDERR, '>', \$stderr); # suppress cpus warning
   my $minimizer = Bio::Minimizer->new($sequence,{numcpus=>$thread});
   return $$minimizer{minimizers}{TCAGTCACAAGAGGCGCTCAGACCGACCTGC};
 }

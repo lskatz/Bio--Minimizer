@@ -9,13 +9,15 @@ use lib "$RealBin/../lib";
 
 use_ok 'Bio::Minimizer';
 
-srand(42);
-my @nt = qw(A T C G);
-my $alphabetSize = scalar(@nt);
-my $sequence = "";
-for(1..240){
-  $sequence .= $nt[int(rand($alphabetSize))]
-}
+#srand(42);
+#my @nt = qw(A T C G);
+#my $alphabetSize = scalar(@nt);
+#my $sequence = "";
+#for(1..240){
+#  $sequence .= $nt[int(rand($alphabetSize))]
+#}
+my $sequence = "CTATAGTTCGTCCAGCGTCTTTGAGGGTAATCATTCGAGGAACCGGACCTTTAATCACGGCTTACTTCAGTCACAAGAGGCGCTCAGACCGACCTGCATCTGGTCAGGGCCCCAGAATCACTTTTAATACTTTAGTCGGTACGTGAGGGACAGACCCAAAGGTACCGGGGCTGATTGTTATGAAGGGTTGCTTCACCGCTACGCAGGCCTCTATTCCAGACCGCTAGGCTTCTAACCTGC";
+#diag $sequence;
 
 my $minimizer = Bio::Minimizer->new($sequence,{numcpus=>2});
 
