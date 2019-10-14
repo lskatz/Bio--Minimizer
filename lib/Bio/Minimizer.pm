@@ -12,6 +12,8 @@ use warnings;
 use Data::Dumper;
 use Carp qw/carp croak/;
 
+use List::MoreUtils qw/uniq/;
+
 # TODO if/when threads, multithread based on large substrings
 # of DNA b/c future heuristic 'saving lmers' between adjacent
 # kmers.
@@ -59,6 +61,36 @@ https://academic.oup.com/bioinformatics/article/20/18/3363/202143
 =head1 DESCRIPTION
 
 Creates a set of minimizers from sequence
+
+=head1 EXAMPLES
+
+example: Sort a fastq file by minimizer, potentially 
+shrinking gzip size.
+
+    use Bio::Minimizer
+
+    # Read fastq file via stdin, in this example
+    while(my $id = <>){
+      # Grab an entry
+      ($seq,$plus,$qual) = (scalar(<>), scalar(<>), scalar(<>)); 
+      chomp($id,$seq,$plus,$qual); 
+
+      # minimizer object
+      $MINIMIZER = Bio::Minimizer->new($seq); 
+      # Get smallest minimizer in this entry
+      $minMinimizer = (sort {$a cmp $b} values(%{$$MINIMIZER{minimizers}}))[0]; 
+
+      # combine the minimum minimizer with the entry, for
+      # sorting later.
+      # Save the entry as a string so that we don't have to
+      # parse it later.
+      my $entry = [$minMinimizer, "$id\n$seq\n$plus\n$qual\n"];
+      push(@entry,$entry);
+    }
+    
+    for my $e(sort {$$a[0] cmp $$b[0]} @entry){
+      print $$e[1];
+    } 
 
 =head1 VARIABLES
 
@@ -124,24 +156,85 @@ sub _minimizers{
   my %MINIMIZER; 
   my %KMER;
 
-  my ($k,$l)=($$self{k}, $$self{l}); 
-  my $defaultSmallestLmer = 'Z' x $l;
-
-  # Create a small array of lmers along the way
-  # so that they don't have to be recalculated
-  # all the time between kmers.
-  my @lmer;
-
-  # How many minimizers we'll get per kmer: the difference in lengths, plus 1
-  my $minimizersPerKmer = $k-$l+1;
-
   # Also reverse-complement the sequence
   my $revcom = reverse($seq);
   $revcom =~ tr/ATCGatcg/TAGCtagc/;
 
+  # Length of kmers
+  my $k = $$self{k};
+
+  # Split the seq and revcom into numcpus x 2 parts
+  # such that each thread will probably get > 1 subseq
+  # and will hopefully balance out the load.
+  my @subseq;
+  # Ensure some overlap in the subseq lengths by adding in $k.
   for my $sequence($seq, $revcom){
+    my $sequenceLength = length($sequence);
+    my $subseqLength = int($sequenceLength / $$self{numcpus}) + 1 + $k;
+    for(my $i=0; $i < $sequenceLength; $i += $subseqLength){
+      my $subseq = substr($sequence, $i, $subseqLength);
+      if(length($subseq) < ($k+1)){
+        $subseq = substr($sequence, -$k - 1);
+      }
+      push(@subseq, $subseq);
+    }
+  }
+  
+  # If multithreading... 
+  if($iThreads && $$self{numcpus} > 1){
+    my @thr;
+    my $numSubseqPerThread = int(@subseq / $$self{numcpus}) + 1;
+    for(my $i=0;$i<$$self{numcpus};$i++){
+      my @threadSubseq = splice(@subseq, 0, $numSubseqPerThread);
+      $thr[$i] = threads->new(\&minimizerWorker, $self, \@threadSubseq);
+    }
+
+    # merge
+    for my $t(@thr){
+      my $m = $t->join;
+      while(my($kmer,$minimizer) = each(%$m)){
+        $MINIMIZER{$kmer} = $minimizer;
+      }
+    }
+  }
+  # If not multithreading...
+  else {
+    my $minimizers = $self->minimizerWorker(\@subseq);
+    %MINIMIZER = %$minimizers;
+  }
+
+  $$self{minimizers} = \%MINIMIZER;
+
+  while(my($kmer,$minimizer) = each(%MINIMIZER)){
+    push(@{ $KMER{$minimizer} }, $kmer);
+  }
+  # Deduplicate %KMER
+  while(my($m, $kmers) = each(%KMER)){
+    $kmers = [sort {$a cmp $b} uniq(@$kmers)];
+  }
+  $$self{kmers} = \%KMER;
+}
+
+sub minimizerWorker{
+  my($self, $seqArr) = @_;
+
+  my %MINIMIZER; # minimizers that this thread finds
+
+  # Lengths of kmers and lmers
+  my ($k,$l)=($$self{k}, $$self{l}); 
+
+  # How many minimizers we'll get per kmer: the difference in lengths, plus 1
+  my $minimizersPerKmer = $k-$l+1;
+
+  for my $sequence(@$seqArr){
     # Number of kmers in the seq is the length of the seq, minus $k, plus 1
     my $numKmers = length($sequence) - $k + 1;
+
+    # Create a small array of lmers along the way
+    # so that they don't have to be recalculated
+    # all the time between kmers.
+    my @lmer;
+
     for(my $i=0; $i<$numKmers; $i++){
 
       # The kmer is the subsequence starting at $i, length $k
@@ -164,15 +257,12 @@ sub _minimizers{
       shift(@lmer);
 
       $MINIMIZER{$kmer} = $minimizer;
-      push(@{ $KMER{$minimizer} }, $kmer);
-    } 
+    }
   }
-
-  $$self{minimizers} = \%MINIMIZER;
-  $$self{kmers}      = \%KMER;
 
   # Go ahead and return kmer=>minimizer
   return \%MINIMIZER;
 }
  
 1;
+
