@@ -47,5 +47,5 @@ subtest 'Minimizer => kmer' => sub{
 
 };
 
-is(scalar(keys(%{ $$minimizer{kmers} })), 78, "Number of kmers");
+is(scalar(keys(%{ $$minimizer{kmers} })), 440, "Number of minimizers");
 
