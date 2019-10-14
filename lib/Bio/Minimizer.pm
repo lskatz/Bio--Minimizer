@@ -5,7 +5,7 @@
 
 package Bio::Minimizer;
 require 5.12.0;
-our $VERSION=0.4;
+our $VERSION=0.5;
 
 use strict;
 use warnings;
@@ -15,10 +15,8 @@ use Carp qw/carp croak/;
 
 use List::MoreUtils qw/uniq/;
 
-# TODO if/when threads, multithread based on large substrings
-# of DNA b/c future heuristic 'saving lmers' between adjacent
-# kmers.
-our $iThreads; # boolean for whether threads are loaded
+# boolean for whether threads are loaded
+our $iThreads; 
 BEGIN{
   eval{
     require threads;
@@ -145,6 +143,10 @@ sub new{
 
   bless($self,$class);
 
+  if($numcpus > 1){
+    carp "WARNING: cpus actually slow down this module at this time";
+  }
+
   # Set $$self{minimizers} right away
   $self->_minimizers($sequence);
 
@@ -171,16 +173,7 @@ sub _minimizers{
   # Ensure some overlap in the subseq lengths by adding in $k.
   for my $sequence($seq, $revcom){
     my $sequenceLength = length($sequence);
-    my $subseqLength = int($sequenceLength / $$self{numcpus});
-    for(my $i=0; $i < $sequenceLength; $i += $subseqLength){
-      my $start = $i - $k;
-      if($start < 0){ $start = 0; }
-      my $subseq = substr($sequence, $start, $subseqLength + 2*$k);
-      if(length($subseq) < ($k+1)){
-        $subseq = substr($sequence, -$k - 1);
-      }
-      push(@subseq, $subseq);
-    }
+    push(@subseq,$sequence);
   }
   
   # If multithreading... 
@@ -251,17 +244,15 @@ sub minimizerWorker{
       }
 
       # The minimizer is the lowest lmer lexicographically sorted.
-      my $minimizer = (sort {$a cmp $b} @lmer)[0];
+      $MINIMIZER{$kmer} = (sort {$a cmp $b} @lmer)[0];
 
       # Remove one lmer to reflect the step size of one
       # for the next iteration of the loop.
-      shift(@lmer);
-
-      $MINIMIZER{$kmer} = $minimizer;
+      my $removedLmer = shift(@lmer);
     }
   }
 
-  # Go ahead and return kmer=>minimizer
+  # Return kmer=>minimizer
   return \%MINIMIZER;
 }
  

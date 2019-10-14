@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use Data::Dumper;
-use Test::More tests=>5;
+use Test::More tests=>6;
 use FindBin qw/$RealBin/;
 use lib "$RealBin/../lib";
 use List::MoreUtils qw/uniq/;
@@ -47,5 +47,12 @@ subtest 'Minimizer => kmer' => sub{
 
 };
 
-is(scalar(keys(%{ $$minimizer{kmers} })), 440, "Number of minimizers");
+my $numKmerTargets = 0;
+my $numMinimizers  = 0;
+while(my($min, $kmers) = each(%{$$minimizer{kmers}})){
+  $numKmerTargets += scalar(@$kmers);
+  $numMinimizers++;
+}
+is($numKmerTargets, 420, "Number of kmer targets");
+is($numMinimizers, 78, "Number of minimizers");
 

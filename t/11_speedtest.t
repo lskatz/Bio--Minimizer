@@ -34,7 +34,7 @@ note "Testing random 1kb sequence with differing thread counts";
 my $cmpChart = "";
 {
   open(local *STDOUT, '>', \$cmpChart) or die "ERROR writing to string: $!";
-  cmpthese(1e2, {
+  cmpthese(1e3, {
       "1-thread" => sub{speedPerThread(1)},
       "2-thread" => sub{speedPerThread(2)},
       "4-thread" => sub{speedPerThread(4)},
