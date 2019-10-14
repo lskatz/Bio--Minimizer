@@ -19,7 +19,7 @@ use_ok 'Bio::Minimizer';
 my $sequence = "CTATAGTTCGTCCAGCGTCTTTGAGGGTAATCATTCGAGGAACCGGACCTTTAATCACGGCTTACTTCAGTCACAAGAGGCGCTCAGACCGACCTGCATCTGGTCAGGGCCCCAGAATCACTTTTAATACTTTAGTCGGTACGTGAGGGACAGACCCAAAGGTACCGGGGCTGATTGTTATGAAGGGTTGCTTCACCGCTACGCAGGCCTCTATTCCAGACCGCTAGGCTTCTAACCTGC";
 #diag $sequence;
 
-my $minimizer = Bio::Minimizer->new($sequence,{numcpus=>1});
+my $minimizer = Bio::Minimizer->new($sequence,{numcpus=>2});
 
 is($$minimizer{k}, 31, "Expected default kmer length");
 is($$minimizer{l}, 21, "Expected default lmer length");
