@@ -5,7 +5,7 @@
 
 package Bio::Minimizer;
 require 5.12.0;
-our $VERSION=0.5;
+our $VERSION=0.6;
 
 use strict;
 use warnings;
