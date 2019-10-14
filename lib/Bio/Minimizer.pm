@@ -9,6 +9,7 @@ our $VERSION=0.4;
 
 use strict;
 use warnings;
+use File::Basename qw/basename/;
 use Data::Dumper;
 use Carp qw/carp croak/;
 
@@ -52,11 +53,11 @@ https://academic.oup.com/bioinformatics/article/20/18/3363/202143
 =head1 SYNOPSIS
 
     my $minimizer = Bio::Minimizer->new($sequenceString);
-    my $kmers     = $minimizer->kmers;     # hash of minimizer => kmer
-    my $minimizers= $minimizer->minimizers;# hash of minimizer => [kmer1,kmer2,...]
+    my $kmers     = $minimizer->{kmers};     # hash of minimizer => kmer
+    my $minimizers= $minimizer->{minimizers};# hash of minimizer => [kmer1,kmer2,...]
 
     # With more options
-    my $lmer      = Bio::Minimizer->new($sequenceString,{k=>31,l=>21});
+    my $minimizer2= Bio::Minimizer->new($sequenceString,{k=>31,l=>21});
 
 =head1 DESCRIPTION
 
@@ -113,7 +114,7 @@ Boolean describing whether the module instance is using threads
       settings     A hash
         k          Kmer length
         l          Minimizer length (some might call it lmer)
-        numcpus    Number of threads to use. Does not currently do anything.
+        numcpus    Number of threads to use. Currently might work against you.
 
 =back
 
@@ -192,9 +193,7 @@ sub _minimizers{
     # merge
     for my $t(@thr){
       my $m = $t->join;
-      while(my($kmer,$minimizer) = each(%$m)){
-        $MINIMIZER{$kmer} = $minimizer;
-      }
+      %MINIMIZER = (%MINIMIZER, %$m);
     }
   }
   # If not multithreading...

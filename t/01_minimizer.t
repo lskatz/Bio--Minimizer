@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use Data::Dumper;
-use Test::More tests=>4;
+use Test::More tests=>5;
 use FindBin qw/$RealBin/;
 use lib "$RealBin/../lib";
 
@@ -35,4 +35,6 @@ subtest 'Kmer => minimizer' => sub{
   is($$minimizer{minimizers}{CCGACTAAAGTATTAAAAGTGATTCTGGGGC}, "AAAGTATTAAAAGTGATTCTG", "CCGACTAAAGTATTAAAAGTGATTCTGGGGC");
   is($$minimizer{minimizers}{CCGACTAAAGTATTAAAAGTGATTCTGGGGC}, "AAAGTATTAAAAGTGATTCTG", "CCGACTAAAGTATTAAAAGTGATTCTGGGGC");
 };
+
+is(scalar(keys(%{ $$minimizer{minimizers} })), 360, "Number of minimizers");
 

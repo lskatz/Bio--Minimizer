@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 use Data::Dumper;
-use Test::More tests=>4;
+use Test::More tests=>5;
 use FindBin qw/$RealBin/;
 use lib "$RealBin/../lib";
 use List::MoreUtils qw/uniq/;
@@ -46,4 +46,6 @@ subtest 'Minimizer => kmer' => sub{
   }
 
 };
+
+is(scalar(keys(%{ $$minimizer{kmers} })), 78, "Number of kmers");
 
