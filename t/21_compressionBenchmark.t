@@ -35,7 +35,7 @@ subtest 'sorting fastqs to make smaller filesize' => sub{
       # Revcom half of the reads
       if(rand(1) < 0.5){
         $seq = reverse($seq);
-        $seq =~ tr/ATCG/tagc/;
+        $seq =~ tr/ATCG/TAGC/;
       }
 
       print $fh "\@read$i pos$start\n$seq\n+\n$qual\n";
