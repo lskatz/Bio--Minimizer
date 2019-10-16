@@ -66,6 +66,8 @@ Creates a set of minimizers from sequence
 example: Sort a fastq file by minimizer, potentially 
 shrinking gzip size.
 
+This is implemented in this package's scripts/sort*.pl scripts.
+
     use Bio::Minimizer
 
     # Read fastq file via stdin, in this example
