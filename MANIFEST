@@ -8,3 +8,5 @@ t/03_kmer.t
 t/04_kmer-MT.t
 t/11_speedtest.t
 t/21_compressionBenchmark.t
+scripts/sortFastqInterleaved.pl
+scripts/sortFastq.pl
