@@ -10,7 +10,7 @@ use lib "$RealBin/../lib";
 use_ok 'Bio::Minimizer';
 
 subtest 'sorting fastqs to make smaller filesize' => sub{
-  my $numTests = 10;
+  my $numTests = 3;
   plan tests => $numTests;
 
   for(1..$numTests){
@@ -23,7 +23,7 @@ subtest 'sorting fastqs to make smaller filesize' => sub{
       $sequence .= $nt[int(rand($alphabetSize))]
     }
 
-    note "Simulating reference genome ".substr($sequence,0,20)."...";
+    note "Simulating reference genome ".substr($sequence,0,10)."...${genomeSize}bp...".substr($sequence,-10,10);
 
     # Simulate the reference genome into 100k reads
     my $readLength = 250;
