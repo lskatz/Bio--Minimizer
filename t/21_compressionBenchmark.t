@@ -52,6 +52,7 @@ subtest 'sorting fastqs to make smaller filesize' => sub{
     my $sortedSize    = (stat("$RealBin/sorted.fastq.gz"))[7];
     my $reduction = sprintf("%0.2f",$sortedSize/$simulatedSize * 100);
 
+    diag "Filesize reduction when sorted: $reduction%";
     cmp_ok($simulatedSize, '>', $sortedSize, "File sizes ($simulatedSize > $sortedSize, $reduction%)");
   }
 };
