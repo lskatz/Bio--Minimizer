@@ -38,5 +38,5 @@ my $cmpChart = "";
     }
   );
 };
-diag $cmpChart;
+diag "\n".$cmpChart;
 
