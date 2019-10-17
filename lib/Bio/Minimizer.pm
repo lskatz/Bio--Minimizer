@@ -208,6 +208,30 @@ sub minimizerWorker{
   return \%MINIMIZER;
 }
 
+=pod
+
+=over
+
+=item $minimizer->starts()
+
+    Arguments: None
+    Returns:   hash of start sites, e.g.,
+               minimizer=>[start1,start2,...]
+
+    Example:
+
+    use Bio::Minimizer;
+    
+    $m = Bio::Minimizer->new($sequence,{l=>4});
+    $starts = $m->starts;
+
+    my $lmer = "AATC";
+    print "$lmer starts => ".join(", ", @{ $$starts{$lmer} })."\n";
+
+=back
+
+=cut
+
 sub starts{
   my($self) = @_;
 
