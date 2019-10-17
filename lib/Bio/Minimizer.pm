@@ -5,7 +5,7 @@
 
 package Bio::Minimizer;
 require 5.12.0;
-our $VERSION=0.6;
+our $VERSION=0.7;
 
 use strict;
 use warnings;
@@ -15,28 +15,9 @@ use Carp qw/carp croak/;
 
 use List::MoreUtils qw/uniq/;
 
-# boolean for whether threads are loaded
-our $iThreads; 
-BEGIN{
-  eval{
-    require threads;
-    require threads::shared;
-    $iThreads = 1;
-  };
-  if($@){
-    $iThreads = 0;
-  }
-}
-
-my $startTime = time();
 sub logmsg{
   local $0 = basename $0; 
-  my $tid = 0;
-  if($iThreads){
-    $tid = threads->tid;
-  }
-  my $elapsedTime = time() - $startTime;
-  print STDERR "$0.$tid $elapsedTime @_\n";
+  print STDERR "$0 @_\n";
 }
 
 =pod
@@ -77,9 +58,9 @@ This is implemented in this package's scripts/sort*.pl scripts.
       chomp($id,$seq,$plus,$qual); 
 
       # minimizer object
-      $MINIMIZER = Bio::Minimizer->new($seq); 
-      # Get smallest minimizer in this entry
-      $minMinimizer = (sort {$a cmp $b} values(%{$$MINIMIZER{minimizers}}))[0]; 
+      $MINIMIZER = Bio::Minimizer->new($seq,{k=>length($seq)}); 
+      # The only minimizer in this entry because k==length(seq)
+      $minMinimizer = (values(%{$$MINIMIZER{minimizers}}))[0]; 
 
       # combine the minimum minimizer with the entry, for
       # sorting later.
@@ -92,16 +73,6 @@ This is implemented in this package's scripts/sort*.pl scripts.
     for my $e(sort {$$a[0] cmp $$b[0]} @entry){
       print $$e[1];
     } 
-
-=head1 VARIABLES
-
-=over
-
-=item $Bio::Minimizer::iThreads
-
-Boolean describing whether the module instance is using threads
-
-=back
 
 =head1 METHODS
 
@@ -134,20 +105,21 @@ sub new{
 
   my $self={
     sequence   => $sequence,
+    revcom     => "",        # revcom of sequence filled in by _minimizers()
     k          => $k,        # kmer length
     l          => $l,        # minimizer length
-    numcpus    => $numcpus,  
+    numcpus    => $numcpus,
     
     # Filled in by _minimizers()
     minimizers => {},        # kmer      => minimizer
     kmers      => {},        # minimizer => [kmer1,kmer2,...]
+
+    # Filled in by starts()
+    # Retrievable by starts()
+    _starts    => {},        # minimizer => [start1,start2,...]
   };
 
   bless($self,$class);
-
-  if($numcpus > 1){
-    carp "WARNING: cpus actually slow down this module at this time";
-  }
 
   # Set $$self{minimizers} right away
   $self->_minimizers($sequence);
@@ -164,46 +136,24 @@ sub _minimizers{
   # Also reverse-complement the sequence
   my $revcom = reverse($seq);
   $revcom =~ tr/ATCGatcg/TAGCtagc/;
+  $$self{revcom} = $revcom;
 
   # Length of kmers
   my $k = $$self{k};
 
-  # Split the seq and revcom into numcpus x 2 parts
-  # such that each thread will probably get > 1 subseq
-  # and will hopefully balance out the load.
-  my @subseq;
-  # Ensure some overlap in the subseq lengths by adding in $k.
+  # All sequence segments. Probably only seq and revcom.
   for my $sequence($seq, $revcom){
-    my $sequenceLength = length($sequence);
-    push(@subseq,$sequence);
+    my $minimizers = $self->minimizerWorker([$sequence]);
+    %MINIMIZER = (%MINIMIZER,%$minimizers);
   }
   
-  # If multithreading... 
-  if($iThreads && $$self{numcpus} > 1){
-    my @thr;
-    my $numSubseqPerThread = int(@subseq / $$self{numcpus}) + 1;
-    for(my $i=0;$i<$$self{numcpus};$i++){
-      my @threadSubseq = splice(@subseq, 0, $numSubseqPerThread);
-      $thr[$i] = threads->new(\&minimizerWorker, $self, \@threadSubseq);
-    }
-
-    # merge
-    for my $t(@thr){
-      my $m = $t->join;
-      %MINIMIZER = (%MINIMIZER, %$m);
-    }
-  }
-  # If not multithreading...
-  else {
-    my $minimizers = $self->minimizerWorker(\@subseq);
-    %MINIMIZER = %$minimizers;
-  }
-
   $$self{minimizers} = \%MINIMIZER;
 
+  # Get a hash %KMER of minimizer=>[kmer1,kmer2,...]
   while(my($kmer,$minimizer) = each(%MINIMIZER)){
     push(@{ $KMER{$minimizer} }, $kmer);
   }
+
   # Deduplicate %KMER
   while(my($m, $kmers) = each(%KMER)){
     $kmers = [sort {$a cmp $b} uniq(@$kmers)];
@@ -256,6 +206,49 @@ sub minimizerWorker{
 
   # Return kmer=>minimizer
   return \%MINIMIZER;
+}
+
+sub starts{
+  my($self) = @_;
+
+  # Don't redo computation if the answer already exists
+  if(keys(%{ $$self{_starts} }) > 0){
+    return $$self{_starts};
+  }
+
+  my %start;
+
+  my $seq    = $$self{sequence};
+  my $revcom = $$self{revcom};
+  my $seqLength = length($seq);
+
+  for my $m(keys(%{$$self{kmers}})){
+    my $start = -1;
+    do{
+      $start = index($seq, $m, $start);
+      if($start >= 0){
+        push(@{$start{$m}}, $start);
+      }
+      $start++; # if index() is -1, then now it is zero
+    } while($start > 0);
+
+    # Revcom: coordinates are differently calculated but
+    # will be reported based on fwd coordinates.
+    # NOTE: should I denote these as revcom matches?
+    my $revStart = -1;
+    do{
+      $revStart = index($revcom, $m, $revStart);
+      if($revStart >= 0){
+        my $start = $seqLength - $revStart - $$self{k} + 1;
+        push(@{$start{$m}}, $revStart);
+      }
+      $revStart++; # if index() is -1, then now it is zero
+    } while($revStart > 0);
+
+  }
+  $$self{_starts} = \%start;
+
+  return \%start;
 }
  
 1;
