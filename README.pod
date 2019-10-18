@@ -25,6 +25,8 @@ Creates a set of minimizers from sequence
 example: Sort a fastq file by minimizer, potentially 
 shrinking gzip size.
 
+This is implemented in this package's scripts/sort*.pl scripts.
+
     use Bio::Minimizer
 
     # Read fastq file via stdin, in this example
@@ -34,9 +36,9 @@ shrinking gzip size.
       chomp($id,$seq,$plus,$qual); 
 
       # minimizer object
-      $MINIMIZER = Bio::Minimizer->new($seq); 
-      # Get smallest minimizer in this entry
-      $minMinimizer = (sort {$a cmp $b} values(%{$$MINIMIZER{minimizers}}))[0]; 
+      $MINIMIZER = Bio::Minimizer->new($seq,{k=>length($seq)}); 
+      # The only minimizer in this entry because k==length(seq)
+      $minMinimizer = (values(%{$$MINIMIZER{minimizers}}))[0]; 
 
       # combine the minimum minimizer with the entry, for
       # sorting later.
@@ -50,16 +52,6 @@ shrinking gzip size.
       print $$e[1];
     } 
 
-=head1 VARIABLES
-
-=over
-
-=item $Bio::Minimizer::iThreads
-
-Boolean describing whether the module instance is using threads
-
-=back
-
 =head1 METHODS
 
 =over
@@ -72,6 +64,31 @@ Boolean describing whether the module instance is using threads
         k          Kmer length
         l          Minimizer length (some might call it lmer)
         numcpus    Number of threads to use. Currently might work against you.
+
+=back
+
+
+=cut
+
+=pod
+
+=over
+
+=item $minimizer->starts()
+
+    Arguments: None
+    Returns:   hash of start sites, e.g.,
+               minimizer=>[start1,start2,...]
+
+    Example:
+
+    use Bio::Minimizer;
+    
+    $m = Bio::Minimizer->new($sequence,{l=>4});
+    $starts = $m->starts;
+
+    my $lmer = "AATC";
+    print "$lmer starts => ".join(", ", @{ $$starts{$lmer} })."\n";
 
 =back
 

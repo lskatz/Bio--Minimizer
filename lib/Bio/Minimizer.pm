@@ -130,8 +130,8 @@ sub new{
 # Argument: string of nucleotides
 sub _minimizers{
   my($self,$seq) = @_;
-  my %MINIMIZER; 
-  my %KMER;
+
+  my $seqLength = length($seq);
 
   # Also reverse-complement the sequence
   my $revcom = reverse($seq);
@@ -142,14 +142,33 @@ sub _minimizers{
   my $k = $$self{k};
 
   # All sequence segments. Probably only seq and revcom.
-  for my $sequence($seq, $revcom){
-    my $minimizers = $self->minimizerWorker([$sequence]);
-    %MINIMIZER = (%MINIMIZER,%$minimizers);
-  }
-  
+  my $fwdMinimizers = $self->minimizerWorker([$seq]);
+  my $revMinimizers = $self->minimizerWorker([$revcom]);
+
+  # Merge minimizer hashes
+  my %MINIMIZER = (%{$$fwdMinimizers{minimizers}}, %{$$revMinimizers{minimizers}});
   $$self{minimizers} = \%MINIMIZER;
 
+  # Merge start site hashes
+  my %START;
+  for my $m(uniq(values(%MINIMIZER))){
+    # Add all start sites for fwd site minimizers
+    for my $pos(@{ $$fwdMinimizers{starts}{$m} }){
+      push(@{ $START{$m} }, $pos);
+    }
+    # recalculate rev minimizer positions
+    for my $pos(@{ $$revMinimizers{starts}{$m} }){
+      my $revPos = $pos;
+      #my $revPos = $seqLength - $pos - $k + 1;
+      push(@{ $START{$m} }, $revPos);
+    }
+
+    $START{$m} = [sort {$a <=> $b} @{$START{$m}}];
+  }
+  $$self{starts} = \%START;
+
   # Get a hash %KMER of minimizer=>[kmer1,kmer2,...]
+  my %KMER;
   while(my($kmer,$minimizer) = each(%MINIMIZER)){
     push(@{ $KMER{$minimizer} }, $kmer);
   }
@@ -165,6 +184,7 @@ sub minimizerWorker{
   my($self, $seqArr) = @_;
 
   my %MINIMIZER; # minimizers that this thread finds
+  my %START;     # minimizer => [start1,start2,...]
 
   # Lengths of kmers and lmers
   my ($k,$l)=($$self{k}, $$self{l}); 
@@ -181,99 +201,45 @@ sub minimizerWorker{
     # all the time between kmers.
     my @lmer;
 
-    for(my $i=0; $i<$numKmers; $i++){
+    for(my $kmerPos=0; $kmerPos<$numKmers; $kmerPos++){
 
-      # The kmer is the subsequence starting at $i, length $k
-      my $kmer=substr($sequence,$i,$k);
+      # The kmer is the subsequence starting at $kmerPos, length $k
+      my $kmer=substr($sequence,$kmerPos,$k);
       
       # Get lmers along the length of the sequence into the @lmer buffer.
-      # The start counter $j how many lmers are already in the buffer.
-      for(my $j=scalar(@lmer); $j < $minimizersPerKmer; $j++){
-        # The lmer will start at $i plus how many lmers are already
+      # The start counter $lmerPos how many lmers are already in the buffer.
+      for(my $lmerPos=scalar(@lmer); $lmerPos < $minimizersPerKmer; $lmerPos++){
+        # The lmer will start at $kmerPos plus how many lmers are already
         # in the buffer @lmer, for length $l.
-        my $lmer = substr($sequence, $i+$j, $l);
-        push(@lmer, $lmer);
+        my $lmer = substr($sequence, $kmerPos+$lmerPos, $l);
+        push(@lmer, [$lmerPos, $lmer]);
       }
 
       # The minimizer is the lowest lmer lexicographically sorted.
-      $MINIMIZER{$kmer} = (sort {$a cmp $b} @lmer)[0];
+      my $minimizerStruct = (sort {$$a[1] cmp $$b[1]} @lmer)[0];
+      $MINIMIZER{$kmer} = $$minimizerStruct[1];
+      # Record the start position
+      my $minimizerStart = $$minimizerStruct[0] + $kmerPos;
+      push(@{ $START{$$minimizerStruct[1]} }, $minimizerStart);
 
       # Remove one lmer to reflect the step size of one
       # for the next iteration of the loop.
       my $removedLmer = shift(@lmer);
+      for(@lmer){
+        $$_[0]--; # lmer position decrement
+      }
     }
   }
 
-  # Return kmer=>minimizer
-  return \%MINIMIZER;
-}
-
-=pod
-
-=over
-
-=item $minimizer->starts()
-
-    Arguments: None
-    Returns:   hash of start sites, e.g.,
-               minimizer=>[start1,start2,...]
-
-    Example:
-
-    use Bio::Minimizer;
-    
-    $m = Bio::Minimizer->new($sequence,{l=>4});
-    $starts = $m->starts;
-
-    my $lmer = "AATC";
-    print "$lmer starts => ".join(", ", @{ $$starts{$lmer} })."\n";
-
-=back
-
-=cut
-
-sub starts{
-  my($self) = @_;
-
-  # Don't redo computation if the answer already exists
-  if(keys(%{ $$self{_starts} }) > 0){
-    return $$self{_starts};
+  # Need to make start sites unique because they have been 
+  # added multiple times.
+  while(my($m, $starts) = each(%START)){
+    $START{$m} = [sort {$a <=> $b} uniq(@$starts)];
   }
 
-  my %start;
-
-  my $seq    = $$self{sequence};
-  my $revcom = $$self{revcom};
-  my $seqLength = length($seq);
-
-  for my $m(keys(%{$$self{kmers}})){
-    my $start = -1;
-    do{
-      $start = index($seq, $m, $start);
-      if($start >= 0){
-        push(@{$start{$m}}, $start);
-      }
-      $start++; # if index() is -1, then now it is zero
-    } while($start > 0);
-
-    # Revcom: coordinates are differently calculated but
-    # will be reported based on fwd coordinates.
-    # NOTE: should I denote these as revcom matches?
-    my $revStart = -1;
-    do{
-      $revStart = index($revcom, $m, $revStart);
-      if($revStart >= 0){
-        my $start = $seqLength - $revStart - $$self{k} + 1;
-        push(@{$start{$m}}, $revStart);
-      }
-      $revStart++; # if index() is -1, then now it is zero
-    } while($revStart > 0);
-
-  }
-  $$self{_starts} = \%start;
-
-  return \%start;
+  # Return kmer=>minimizer, minimizer=>[start1,start2,...]
+  return {minimizers=>\%MINIMIZER, starts=>\%START};
 }
- 
+
 1;
 
