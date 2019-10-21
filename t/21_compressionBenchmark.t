@@ -18,7 +18,7 @@ subtest 'sorting fastqs to make smaller filesize' => sub{
     my @nt = qw(A T C G);
     my $alphabetSize = scalar(@nt);
     my $sequence = "";
-    my $genomeSize = 5000000;
+    my $genomeSize = 1000000;
     for(1..$genomeSize){ # 5Mbp genome
       $sequence .= $nt[int(rand($alphabetSize))]
     }
