@@ -17,7 +17,7 @@ use List::MoreUtils qw/uniq/;
 
 sub logmsg{
   local $0 = basename $0; 
-  print STDERR "$0 @_\n";
+  print STDERR "$0: @_\n";
 }
 
 =pod
@@ -177,6 +177,7 @@ sub _minimizers{
   while(my($m, $kmers) = each(%KMER)){
     $kmers = [sort {$a cmp $b} uniq(@$kmers)];
   }
+  #die Dumper $$self{kmers}{ACGTA};
   $$self{kmers} = \%KMER;
 }
 
@@ -218,9 +219,13 @@ sub minimizerWorker{
       # The minimizer is the lowest lmer lexicographically sorted.
       my $minimizerStruct = (sort {$$a[1] cmp $$b[1]} @lmer)[0];
       $MINIMIZER{$kmer} = $$minimizerStruct[1];
+
       # Record the start position
       my $minimizerStart = $$minimizerStruct[0] + $kmerPos;
-      push(@{ $START{$$minimizerStruct[1]} }, $minimizerStart);
+      #push(@{ $START{$$minimizerStruct[1]} }, $minimizerStart);
+      $START{$$minimizerStruct[1]}{$minimizerStart}=1;
+
+      #logmsg join("\t", $minimizerStart,$$minimizerStruct[1], $kmer);
 
       # Remove one lmer to reflect the step size of one
       # for the next iteration of the loop.
@@ -231,10 +236,10 @@ sub minimizerWorker{
     }
   }
 
-  # Need to make start sites unique because they have been 
-  # added multiple times.
+  # Change index to array of unique sites
   while(my($m, $starts) = each(%START)){
-    $START{$m} = [sort {$a <=> $b} uniq(@$starts)];
+    #$START{$m} = [sort {$a <=> $b} uniq(@$starts)];
+    $START{$m} = [sort {$a<=>$b} keys(%$starts)];
   }
 
   # Return kmer=>minimizer, minimizer=>[start1,start2,...]
