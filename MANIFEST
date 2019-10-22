@@ -11,3 +11,4 @@ t/11_speedtest.t
 t/21_compressionBenchmark.t
 scripts/sortFastqInterleaved.pl
 scripts/sortFastq.pl
+scripts/indexFasta.pl
