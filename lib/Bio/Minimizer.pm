@@ -5,7 +5,7 @@
 
 package Bio::Minimizer;
 require 5.12.0;
-our $VERSION=0.7;
+our $VERSION=0.8;
 
 use strict;
 use warnings;
@@ -34,6 +34,11 @@ https://academic.oup.com/bioinformatics/article/20/18/3363/202143
     my $minimizer = Bio::Minimizer->new($sequenceString);
     my $kmers     = $minimizer->{kmers};     # hash of minimizer => kmer
     my $minimizers= $minimizer->{minimizers};# hash of minimizer => [kmer1,kmer2,...]
+
+    # hash of minimizer => [start1,start2,...] 
+    # Start coordinates are on the fwd strand even when
+    # matched against the rev strand.
+    my $starts    = $minimizer->{starts}; 
 
     # With more options
     my $minimizer2= Bio::Minimizer->new($sequenceString,{k=>31,l=>21});
@@ -85,7 +90,7 @@ This is implemented in this package's scripts/sort*.pl scripts.
       settings     A hash
         k          Kmer length
         l          Minimizer length (some might call it lmer)
-        numcpus    Number of threads to use. Currently might work against you.
+        numcpus    Number of threads to use. (not used)
 
 =back
 
@@ -113,10 +118,7 @@ sub new{
     # Filled in by _minimizers()
     minimizers => {},        # kmer      => minimizer
     kmers      => {},        # minimizer => [kmer1,kmer2,...]
-
-    # Filled in by starts()
-    # Retrievable by starts()
-    _starts    => {},        # minimizer => [start1,start2,...]
+    starts     => {},        # minimizer => [start1,start2,...]
   };
 
   bless($self,$class);
