@@ -11,7 +11,7 @@ https://academic.oup.com/bioinformatics/article/20/18/3363/202143
 
     my $minimizer = Bio::Minimizer->new($sequenceString);
     my $kmers     = $minimizer->{kmers};     # hash of minimizer => kmer
-    my $minimizers= $minimizer->{minimizers};# hash of minimizer => [kmer1,kmer2,...]
+    my $minimizers= $minimizer->{minimizers};# hash of kmer => [minimizer1, minimizer2,...]
 
     # hash of minimizer => [start1,start2,...] 
     # Start coordinates are on the fwd strand even when
